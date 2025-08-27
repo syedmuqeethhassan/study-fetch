@@ -14,6 +14,7 @@ model User {
   name         String
   passwordHash String
   sessions Session[]
+  pdfs      Pdf[]
 }
 
 model Session {
@@ -21,4 +22,16 @@ model Session {
   userId       String
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   expires      DateTime
+}
+
+model Pdf {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  filename  String
+  mimeType  String
+  sizeBytes Int
+  // Store in DB for Neon (bytea)
+  data      Bytes
+  createdAt DateTime @default(now())
 }

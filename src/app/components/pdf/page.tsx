@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import PdfViewerComponent from "./pdfViewerComponent";
+import { useEffect, useState } from "react";
+import PdfViewerComponent, { fetchLoginPdfUrl } from "./pdfViewerComponent";
 
 export default function PDF() {
   const [file, setFile] = useState<File | null>(null);
@@ -45,6 +45,16 @@ export default function PDF() {
       setIsLoading(false);
     }
   }
+
+  useEffect(() => {
+    let isMounted = true;
+    fetchLoginPdfUrl().then((url) => {
+      if (isMounted && url) setUrl(url);
+    });
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   return (
     <div className="w-full h-full flex flex-col p-4">

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
 import { prisma } from '@/lib/prisma';
+import { getCookieOptions, getCookieName, signAuthToken } from '@/lib/auth';
 
 export async function POST(request: NextRequest) {
 	try {
@@ -25,7 +26,14 @@ export async function POST(request: NextRequest) {
 			select: { id: true, email: true, name: true },
 		});
 
-		return NextResponse.json({ user }, { status: 201 });
+		// Auto-login: create session and set cookie
+		const sessionTtlHours = 24;
+		const expires = new Date(Date.now() + sessionTtlHours * 60 * 60 * 1000);
+		const session = await prisma.session.create({ data: { userId: user.id, expires }, select: { id: true } });
+		const token = await signAuthToken({ uid: user.id, sid: session.id, email: user.email, name: user.name }, sessionTtlHours * 60 * 60);
+		const res = NextResponse.json({ user }, { status: 201 });
+		res.cookies.set(getCookieName(), token, getCookieOptions(expires));
+		return res;
 	} catch (error) {
 		console.error('Signup error:', error);
 		return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
