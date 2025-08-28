@@ -9,6 +9,7 @@ export default function PDF() {
   const [url, setUrl] = useState<string>("");
   const [isLoading, setIsLoading] = useState(false);
 
+
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     setStatus("");
@@ -28,6 +29,7 @@ export default function PDF() {
       const res = await fetch("/api/upload", {
         method: "POST",
         body: fd,
+        credentials: 'include',
       });
 
       const json = await res.json();
@@ -45,6 +47,8 @@ export default function PDF() {
       setIsLoading(false);
     }
   }
+
+
 
   useEffect(() => {
     let isMounted = true;
@@ -78,7 +82,9 @@ export default function PDF() {
             {isLoading ? "Uploading..." : "Upload"}
           </button>
         </form>
-        
+
+
+
         {/* {status && (
           <div className={`mt-2 text-sm ${status.includes('successfully') ? 'text-green-600' : 'text-red-600'}`}>
             {status}

@@ -22,6 +22,7 @@ const nextConfig: NextConfig = {
   // Enable experimental features if needed
   experimental: {
     esmExternals: 'loose',
+    serverComponentsExternalPackages: ["pdf-parse"],
   },
 };
 
