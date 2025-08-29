@@ -3,7 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { readAuthFromRequest } from '@/lib/auth';
 import { chunkTextByPages } from '@/lib/chunking';
 import pdfParse from 'pdf-parse';
-import { GoogleGenerativeAI } from '@google/generative-ai';
+// import { GoogleGenerativeAI } from '@google/generative-ai'; // Disabled: Vector embeddings
 import { randomUUID } from 'crypto';
 
 /**
@@ -19,40 +19,55 @@ async function extractTextFromPDF(pdfBuffer: Buffer): Promise<string[]> {
   }
 }
 
-/**
- * Generates embeddings for text using Gemini
- */
-async function generateEmbedding(text: string): Promise<number[]> {
-  try {
-    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
-    const model = genAI.getGenerativeModel({ model: 'text-embedding-004' });
+// /**
+//  * Generates embeddings for text using Gemini - DISABLED
+//  */
+// async function generateEmbedding(text: string): Promise<number[]> {
+//   try {
+//     // Debug: Check if API key is available
+//     const apiKey = process.env.GOOGLE_GENERATIVE_AI_API_KEY;
+//     console.log('API Key status:', apiKey ? 'Present' : 'Missing');
+//     
+//     if (!apiKey) {
+//       throw new Error('GOOGLE_GENERATIVE_AI_API_KEY environment variable is not set');
+//     }
+//     
+//     console.log('API Key length:', apiKey.length);
+//     console.log('API Key first 10 chars:', apiKey.substring(0, 10) + '...');
+//     
+//     const genAI = new GoogleGenerativeAI(apiKey);
+//     const model = genAI.getGenerativeModel({ model: 'text-embedding-004' });
 
-    const result = await model.embedContent(text);
-    return result.embedding.values;
-  } catch (error) {
-    console.error('Error generating embedding:', error);
-    throw new Error('Failed to generate embedding');
-  }
-}
+//     const result = await model.embedContent(text);
+//     return result.embedding.values;
+//   } catch (error) {
+//     console.error('Error generating embedding:', error);
+//     if (error instanceof Error) {
+//       console.error('Error message:', error.message);
+//       console.error('Error stack:', error.stack);
+//     }
+//     throw new Error(`Failed to generate embedding: ${error instanceof Error ? error.message : 'Unknown error'}`);
+//   }
+// }
 
-/**
- * Generates embeddings for multiple chunks sequentially
- */
-async function generateEmbeddings(chunks: string[]): Promise<number[][]> {
-  try {
-    const embeddings: number[][] = [];
+// /**
+//  * Generates embeddings for multiple chunks sequentially - DISABLED
+//  */
+// async function generateEmbeddings(chunks: string[]): Promise<number[][]> {
+//   try {
+//     const embeddings: number[][] = [];
 
-    for (const chunk of chunks) {
-      const embedding = await generateEmbedding(chunk);
-      embeddings.push(embedding);
-    }
+//     for (const chunk of chunks) {
+//       const embedding = await generateEmbedding(chunk);
+//       embeddings.push(embedding);
+//     }
 
-    return embeddings;
-  } catch (error) {
-    console.error('Error generating embeddings:', error);
-    throw new Error('Failed to generate embeddings');
-  }
-}
+//     return embeddings;
+//   } catch (error) {
+//     console.error('Error generating embeddings:', error);
+//     throw new Error('Failed to generate embeddings');
+//   }
+// }
 
 export async function POST(request: NextRequest) {
   try {
@@ -89,6 +104,11 @@ export async function POST(request: NextRequest) {
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
 
+    // Delete existing chat messages for this user (since we're uploading a new PDF)
+    await prisma.message.deleteMany({
+      where: { userId: auth.uid }
+    });
+
     // Store in Neon via Prisma
     const saved = await prisma.pdf.create({
       data: {
@@ -109,7 +129,7 @@ export async function POST(request: NextRequest) {
       url
     });
 
-    // Process PDF chunking and vectorization in background (non-blocking)
+    // Process PDF chunking in background (non-blocking) - vectorization disabled
     // This runs after the response is sent to the client
     setImmediate(async () => {
       try {
@@ -124,48 +144,27 @@ export async function POST(request: NextRequest) {
           if (chunks.length > 0) {
             console.log(`Starting to process ${chunks.length} chunks for PDF ${saved.id}`);
 
-            // Generate embeddings for all chunks using Gemini
-            const chunkTexts = chunks.map(chunk => chunk.content);
-            console.log(`Generating embeddings for ${chunkTexts.length} text chunks...`);
+            // Store chunks without embeddings (embeddings disabled)
+            console.log(`💾 Inserting ${chunks.length} chunks without embeddings...`);
 
-            const embeddings = await generateEmbeddings(chunkTexts);
-            console.log(`Generated ${embeddings.length} embeddings`);
+            // Use Prisma to insert chunks without embeddings
+            const chunkData = chunks.map(chunk => ({
+              id: randomUUID(),
+              content: chunk.content,
+              pdfId: saved.id,
+              pageNumber: chunk.pageNumber,
+              // embedding field omitted - will be null
+            }));
 
-            // Check if embeddings are valid
-            if (!embeddings || embeddings.length === 0) {
-              console.error('No embeddings generated!');
-              throw new Error('Failed to generate embeddings');
-            }
+            await prisma.chunk.createMany({
+              data: chunkData,
+            });
 
-            // Log first embedding to verify it's working
-            console.log('First embedding sample:', embeddings[0]?.slice(0, 5), '...');
-
-            // Use raw SQL to insert chunks with vector embeddings
-            console.log('💾 Inserting chunks with vector embeddings using raw SQL...');
-
-            const values = chunks.map((chunk, index) => {
-              const chunkId = randomUUID();
-              const escapedContent = chunk.content.replace(/'/g, "''");
-              const vectorString = `[${embeddings[index].join(',')}]`; // Format as PostgreSQL vector
-
-              return `('${chunkId}', '${escapedContent}', '${vectorString}', '${saved.id}', ${chunk.pageNumber}, NOW())`;
-            }).join(', ');
-
-            const query = `
-              INSERT INTO "Chunk" (id, content, embedding, "pdfId", "pageNumber", "createdAt")
-              VALUES ${values}
-            `;
-
-            console.log('SQL Query preview (first 100 chars):', query.substring(0, 100) + '...');
-
-            await prisma.$executeRawUnsafe(query);
-
-            console.log(`✅ Successfully created ${chunks.length} vectorized chunks for PDF ${saved.id}`);
-            console.log('🎯 Embeddings stored as native PostgreSQL vectors!');
+            console.log(`✅ Successfully created ${chunks.length} chunks for PDF ${saved.id}`);
           }
         }
       } catch (chunkingError) {
-        console.error('Background chunking/vectorization failed for PDF:', saved.id, chunkingError);
+        console.error('Background chunking failed for PDF:', saved.id, chunkingError);
         // Background processing failure doesn't affect the user experience
       }
     });

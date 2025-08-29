@@ -9,11 +9,14 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@ai-sdk/google": "^2.0.11",
+    "@ai-sdk/react": "^2.0.27",
     "@auth/prisma-adapter": "^2.10.0",
     "@google/generative-ai": "^0.24.1",
     "@react-pdf-viewer/core": "^3.12.0",
     "@react-pdf-viewer/default-layout": "^3.12.0",
     "@types/pdf-parse": "^1.1.5",
+    "ai": "^5.0.27",
     "bcryptjs": "^3.0.2",
     "jose": "^5.10.0",
     "next": "15.4.6",

@@ -14,6 +14,7 @@ model User {
   name         String
   pdfs         Pdf[]
   sessions     Session[]
+  messages     Message[]
 }
 
 model Session {
@@ -32,6 +33,7 @@ model Pdf {
   data      Bytes
   createdAt DateTime @default(now())
   chunks    Chunk[]
+  messages  Message[]
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
@@ -46,4 +48,19 @@ model Chunk {
 
   @@index([pdfId])
   @@index([embedding])
+}
+
+model Message {
+  id        String   @id @default(cuid())
+  content   String
+  role      String   // 'user' or 'assistant'
+  userId    String
+  pdfId     String?  // Optional, to associate messages with specific PDF
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  pdf       Pdf?     @relation(fields: [pdfId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([pdfId])
+  @@index([createdAt])
 }

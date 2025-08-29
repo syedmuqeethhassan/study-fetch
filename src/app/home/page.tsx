@@ -13,7 +13,7 @@ export default function Home() {
 
       {/* Right Container - 50% */}
       <div className="w-1/2 bg-white">
-        <div className="h-full flex items-center justify-center">
+        <div className="h-full">
           <Chat />
         </div>
       </div>

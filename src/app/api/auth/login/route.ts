@@ -23,15 +23,17 @@ export async function POST(request: NextRequest) {
 			return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
 		}
 
-		// Create DB session and set JWT cookie
-		const sessionTtlHours = 24;
-		const expires = new Date(Date.now() + sessionTtlHours * 60 * 60 * 1000);
+		// Create DB session and set JWT cookie with synchronized expiry times
+		const now = Date.now();
+		const sessionTtlMs = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
+		const expires = new Date(now + sessionTtlMs);
+		
 		const session = await prisma.session.create({
 			data: { userId: user.id, expires },
 			select: { id: true, expires: true },
 		});
 
-		const token = await signAuthToken({ uid: user.id, sid: session.id, email: user.email, name: user.name }, sessionTtlHours * 60 * 60);
+		const token = await signAuthToken({ uid: user.id, sid: session.id, email: user.email, name: user.name }, Math.floor(sessionTtlMs / 1000));
 
 		const res = NextResponse.json({ ok: true }, { status: 200 });
 		res.cookies.set(getCookieName(), token, getCookieOptions(expires));

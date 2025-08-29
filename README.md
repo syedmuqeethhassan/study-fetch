@@ -42,4 +42,17 @@ Create a `.env` file with:
 ```env
 DATABASE_URL=postgresql://user:pass@host:5432/db
 JWT_SECRET=replace-with-a-long-random-string
+GEMINI_API_KEY=your-gemini-api-key-here
 ```
+
+### Getting Your Gemini API Key
+
+1. Go to [Google AI Studio](https://aistudio.google.com/app/apikey)
+2. Create a new API key
+3. Copy the key and replace `your-gemini-api-key-here` in your `.env` file
+
+### Required Environment Variables
+
+- `DATABASE_URL`: PostgreSQL database connection string
+- `JWT_SECRET`: A long random string for JWT token signing
+- `GEMINI_API_KEY`: Google Gemini API key for AI functionality (embeddings and chat)

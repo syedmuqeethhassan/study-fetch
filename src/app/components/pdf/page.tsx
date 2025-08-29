@@ -41,6 +41,9 @@ export default function PDF() {
 
       setStatus("Uploaded successfully!");
       setUrl(json.url);
+      
+      // Trigger chat refresh with custom event
+      window.dispatchEvent(new CustomEvent('pdfUploaded'));
     } catch (error) {
       setStatus("Upload failed. Please try again.");
     } finally {
