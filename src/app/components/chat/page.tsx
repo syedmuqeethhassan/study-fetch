@@ -2,6 +2,7 @@
 
 // Removed useChat import as we're using direct API calls
 import { useEffect, useState } from 'react';
+import { parseHighlightInfo, highlightTextFromResponse } from '@/lib/pdfHighlight';
 
 interface ChatMessage {
   id: string;
@@ -65,14 +66,6 @@ export default function Chat() {
 
   return (
     <div className="h-full flex flex-col bg-gray-50">
-      {/* Chat Header */}
-      <div className="bg-white border-b border-gray-200 p-4">
-        <div className="flex items-center gap-2">
-          <span className="text-xl">🤖</span>
-          <h2 className="text-lg font-semibold text-gray-800">PDF Chat Assistant</h2>
-        </div>
-        <p className="text-sm text-gray-600 mt-1">Ask questions about your uploaded PDF</p>
-      </div>
 
       {/* Messages Container */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
@@ -107,6 +100,35 @@ export default function Chat() {
                 }`}
               >
                 <p className="whitespace-pre-wrap">{message.content}</p>
+                
+                {/* Add highlight button for assistant messages that contain source text */}
+                {message.role === 'assistant' && parseHighlightInfo(message.content) && (
+                  <div className="mt-3 pt-3 border-t border-gray-100">
+                    <button
+                      onClick={() => {
+                        const highlight = highlightTextFromResponse(message.content, (highlightArea) => {
+                          // Dispatch a custom event to notify the PDF viewer with original response
+                          window.dispatchEvent(new CustomEvent('highlightText', {
+                            detail: {
+                              ...highlightArea,
+                              originalResponse: message.content
+                            }
+                          }));
+                        });
+                        
+                        if (highlight) {
+                          console.log('Highlighting text on page:', highlight.pageIndex + 1);
+                        } else {
+                          console.log('Could not create highlight from response');
+                        }
+                      }}
+                      className="inline-flex items-center gap-2 px-3 py-1 text-sm bg-blue-100 text-blue-800 border border-blue-300 rounded-md hover:bg-blue-200 transition-colors"
+                    >
+                      <span>📄</span>
+                      Go to page
+                    </button>
+                  </div>
+                )}
               </div>
 
               {message.role === 'user' && (

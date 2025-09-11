@@ -124,9 +124,13 @@ ${pdfContext}
 Instructions:
 - Answer questions based only on the provided PDF content
 - If information is not in the PDF, clearly state that
-- Provide specific references to page numbers when possible
-- Be concise but thorough in your responses
-- Remember this PDF content for our entire conversation`
+- If the user asks for related information from the pdf content, give a brief answer from your knowledge and clearly mention it is not mentioned in the pdf provided
+- Remember this PDF content for our entire conversation
+- When answering, please format your response as:
+- Answer: [your response]
+- Page number: [page X]
+
+IMPORTANT: Do NOT include the "Source text:" field in your response. Only provide the Answer and Page number.`
         : `Continue our conversation about the PDF document. Answer questions based on the PDF content provided earlier in this conversation. If you need to reference specific information, refer back to the PDF content from our conversation history.`
     };
 
@@ -173,7 +177,7 @@ Instructions:
 
     // Generate AI response  
     const result = await streamText({
-      model: google('gemini-1.5-flash'),
+      model: google('gemini-2.5-flash'),
       messages: coreMessages,
     });
     console.log('result', result);
