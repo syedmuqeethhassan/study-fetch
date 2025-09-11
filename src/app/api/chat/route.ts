@@ -36,7 +36,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Ensure all messages have the required structure
-    const validMessages = messages.map((msg: any) => {
+    const validMessages = messages.map((msg: { role?: string; content?: string; text?: string; parts?: Array<{ type: string; text: string }> }) => {
       let content = '';
       
       // Handle different message formats
@@ -47,8 +47,8 @@ export async function POST(req: NextRequest) {
       } else if (msg.parts && Array.isArray(msg.parts)) {
         // Handle the new AI SDK format with parts
         content = msg.parts
-          .filter((part: any) => part.type === 'text')
-          .map((part: any) => part.text)
+          .filter((part: { type: string; text: string }) => part.type === 'text')
+          .map((part: { type: string; text: string }) => part.text)
           .join(' ');
       }
       

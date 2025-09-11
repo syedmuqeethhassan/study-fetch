@@ -19,11 +19,8 @@ const nextConfig: NextConfig = {
 
     return config;
   },
-  // Enable experimental features if needed
-  experimental: {
-    esmExternals: 'loose',
-    serverComponentsExternalPackages: ["pdf-parse"],
-  },
+  // Move serverComponentsExternalPackages to top level
+  serverExternalPackages: ["pdf-parse"],
 };
 
 export default nextConfig;

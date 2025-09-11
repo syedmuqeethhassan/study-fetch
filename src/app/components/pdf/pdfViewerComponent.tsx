@@ -1,12 +1,11 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { Worker, Viewer } from '@react-pdf-viewer/core';
 import { defaultLayoutPlugin } from '@react-pdf-viewer/default-layout';
-import { highlightPlugin, MessageIcon } from '@react-pdf-viewer/highlight';
+import { highlightPlugin } from '@react-pdf-viewer/highlight';
 import type { RenderHighlightContentProps, RenderHighlightTargetProps } from '@react-pdf-viewer/highlight';
 import { searchPlugin } from '@react-pdf-viewer/search';
-import type { RenderSearchProps } from '@react-pdf-viewer/search';
 import { pageNavigationPlugin } from '@react-pdf-viewer/page-navigation';
 import { HighlightArea, parseHighlightInfo } from '@/lib/pdfHighlight';
 
@@ -38,7 +37,6 @@ const PdfViewerComponent = ({ fileUrl, highlightAreas = [], onHighlightAdded }: 
   const [mounted, setMounted] = useState(false);
   const [dynamicHighlights, setDynamicHighlights] = useState<HighlightArea[]>([]);
   const [searchKeyword, setSearchKeyword] = useState('');
-  const [targetPage, setTargetPage] = useState<number | null>(null);
 
   // Create plugins
   const defaultLayoutPluginInstance = defaultLayoutPlugin();
@@ -48,13 +46,10 @@ const PdfViewerComponent = ({ fileUrl, highlightAreas = [], onHighlightAdded }: 
   // Create search plugin instance with custom render and debugging
   const searchPluginInstance = searchPlugin({
     keyword: searchKeyword,
-    matchCase: false, // Make search case-insensitive
-    wholeWords: false, // Allow partial word matches
     onHighlightKeyword: (props) => {
       console.log('Search plugin found matches:', props);
       console.log('Match details:', {
-        keyword: props.keyword,
-        numMatches: props.numMatches || 'unknown'
+        keyword: props.keyword
       });
       return (
         <mark
@@ -67,27 +62,25 @@ const PdfViewerComponent = ({ fileUrl, highlightAreas = [], onHighlightAdded }: 
             border: '1px solid #ffcc00'
           }}
         >
-          {props.keyword}
+          {String(props.keyword)}
         </mark>
       );
     },
   });
   
-  const renderHighlightTarget = (props: RenderHighlightTargetProps) => {
-    // Return null to disable the highlight target icon
-    return null;
+  const renderHighlightTarget = (_props: RenderHighlightTargetProps) => {
+    // Return empty div to disable the highlight target icon
+    return <div style={{ display: 'none' }} />;
   };
 
-  const renderHighlightContent = (props: RenderHighlightContentProps) => {
-    // Return null to disable the popup
-    return null;
+  const renderHighlightContent = (_props: RenderHighlightContentProps) => {
+    // Return empty div to disable the popup
+    return <div style={{ display: 'none' }} />;
   };
 
-  // Combine external highlight areas with dynamic ones
-  const allHighlights = [...highlightAreas, ...dynamicHighlights];
+  // Note: allHighlights would be used if the highlight plugin supported areas prop
 
   const highlightPluginInstance = highlightPlugin({
-    areas: allHighlights,
     renderHighlightTarget,
     renderHighlightContent,
   });
@@ -116,7 +109,7 @@ const PdfViewerComponent = ({ fileUrl, highlightAreas = [], onHighlightAdded }: 
             .trim();
           
           // Use only the first three distinctive words
-          const words = searchText.split(' ').filter(word => word.length > 2); // Filter out very short words
+          const words = searchText.split(' ').filter((word: string) => word.length > 2); // Filter out very short words
           searchText = words.slice(0, 3).join(' '); // Use 3 words
           
           console.log('Using first three terms for search:', searchText);
@@ -125,7 +118,6 @@ const PdfViewerComponent = ({ fileUrl, highlightAreas = [], onHighlightAdded }: 
       
       // Clear previous search and navigate to page
       setSearchKeyword('');
-      setTargetPage(highlightArea.pageIndex);
       
       // Navigate to page first
       if (jumpToPage) {
@@ -142,7 +134,7 @@ const PdfViewerComponent = ({ fileUrl, highlightAreas = [], onHighlightAdded }: 
           // If no highlighting after 3 seconds, try individual words
           setTimeout(() => {
             if (searchKeyword === searchText) {
-              const words = searchText.split(' ').filter(word => word.length > 2);
+              const words = searchText.split(' ').filter((word: string) => word.length > 2);
               if (words.length > 0) {
                 console.log('Trying individual word search:', words[0]);
                 setSearchKeyword(words[0]);
@@ -177,7 +169,7 @@ const PdfViewerComponent = ({ fileUrl, highlightAreas = [], onHighlightAdded }: 
     return () => {
       window.removeEventListener('highlightText', handleHighlightEvent as EventListener);
     };
-  }, [onHighlightAdded, jumpToPage]);
+  }, [onHighlightAdded, jumpToPage, searchKeyword]);
 
 
 

@@ -5,19 +5,16 @@ import PdfViewerComponent, { fetchLoginPdfUrl } from "./pdfViewerComponent";
 
 export default function PDF() {
   const [file, setFile] = useState<File | null>(null);
-  const [status, setStatus] = useState<string>("");
   const [url, setUrl] = useState<string>("");
   const [isLoading, setIsLoading] = useState(false);
 
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setStatus("");
     setUrl("");
     setIsLoading(true);
 
     if (!file) {
-      setStatus("Please select a PDF file");
       setIsLoading(false);
       return;
     }
@@ -35,17 +32,15 @@ export default function PDF() {
       const json = await res.json();
 
       if (!res.ok) {
-        setStatus(json.error || "Upload failed.");
         return;
       }
 
-      setStatus("Uploaded successfully!");
       setUrl(json.url);
       
       // Trigger chat refresh with custom event
       window.dispatchEvent(new CustomEvent('pdfUploaded'));
-    } catch (error) {
-      setStatus("Upload failed. Please try again.");
+    } catch (_error) {
+      // Handle error silently or add proper error handling
     } finally {
       setIsLoading(false);
     }

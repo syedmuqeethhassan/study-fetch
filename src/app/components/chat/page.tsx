@@ -74,12 +74,12 @@ export default function Chat() {
             <span className="text-4xl mb-4">🤖</span>
             <h3 className="text-lg font-medium mb-2">Start a conversation</h3>
             <p className="text-sm text-center max-w-sm">
-              Ask me anything about your PDF document. I'll help you find answers based on the content.
+              Ask me anything about your PDF document. I&apos;ll help you find answers based on the content.
             </p>
           </div>
         ) : (
           // Use only database messages as single source of truth
-          chatHistory.map((message: any) => (
+          chatHistory.map((message: { id: string; role: string; content: string }) => (
             <div
               key={message.id}
               className={`flex gap-3 ${
